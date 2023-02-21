@@ -1,24 +1,18 @@
-// #ifdef ESP32
-//   #include <WiFi.h>
-// #else
-//   #include <ESP8266WiFi.h>
-// #endif
-
-// void setup(){
-//   Serial.begin(115200);
-//   Serial.println();
-//   Serial.print("ESP Board MAC Address:  ");
-//   Serial.println(WiFi.macAddress());
-// }
- 
-// void loop(){
-
-// }
+/*  
+ *  *** NeoCortex 2023 ***
+ *  ESP8266 IMU RECEIVER FIRMWARE
+ *
+ *  This program controls the receiver for two IMU modules concerned
+ *  and sends their payload via USART.
+ *
+ *  Can also be connected to Arduino MKR0 to log data through the on-board
+ *  micro SD memory card module (for example using Petit FatFS library)
+ *
+ */
 #include <ESP8266WiFi.h>
 #include <espnow.h>
 
-// Structure example to receive data
-// Must match the sender structure
+// IMU module features data structure
 typedef struct struct_message {
     int id;
     int Xacc ;
@@ -130,10 +124,9 @@ void OnDataRecv(uint8_t * mac_addr, uint8_t *incomingData, uint8_t len) {
 }
  
 
-
-
 void setup() {
-  // Initialize Serial Monitor
+
+  // Open USART at 115200 baud rate
   Serial.begin(115200);
   
   // Set device as a Wi-Fi Station
@@ -146,12 +139,13 @@ void setup() {
     return;
   }
   
-  // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
+  // Callback function executed when ANY ESP data is received
   esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
   esp_now_register_recv_cb(OnDataRecv);
 }
 
 void loop(){
+
   // Keep this loop empty
+
 }

@@ -1,25 +1,32 @@
+/*  
+ *  *** NeoCortex 2023 ***
+ *  IMU BUTTONS FIRMWARE
+ *
+ *  This program controls the button IMU module
+ */
 #include <Wire.h>
 #include <esp_now.h>
 #include <Adafruit_NeoPixel.h>
 #include "WiFi.h"
-
-
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-// Which pin on the Arduino is connected to the NeoPixels?
-#define PIN        23 // On Trinket or Gemma, suggest changing this to 1
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 3 // Popular NeoPixel ring size
+// Neopixel LED pin
+#define PIN        23 
+// How many NeoPixel LEDs are attached to the Arduino
+#define NUMPIXELS 3 
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 
+// Additional variables for data transmission purposes
 int label = 999;
-int save=999;
+int save = 999;
 
+// Request Data Collection Payload
 int req = 123;
 
+// IMU module features data structure
 int id=1;
 int Xacc1 = 0;
 int Yacc1 = 0;
@@ -45,13 +52,10 @@ int Zgrav1 = 0;
 int Sample = 500;
 
 
-
-
 /* Set the delay between fresh samples */
 uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
 
 // Check I2C device address and correct line below (by default address is 0x29 or 0x28)
-//                                   id, address
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
 
 uint8_t broadcastAddress[] = {0x4C, 0x75, 0x25, 0x31, 0xA9, 0x47};
@@ -98,16 +102,15 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 
 
 void setup() {
-  // Setup Buttons
+  // Setup both buttons as inputs with internal pull-up resistor
   pinMode(25, INPUT_PULLUP);
   pinMode(26, INPUT_PULLUP);
   // Setup Neopixel LEDs
-  pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
+  pixels.begin(); // INITIALIZE NeoPixel strip object
   pixels.clear(); // Set all pixel colors to 'off'
 
-  // put your setup code here, to run once:
+  // Open USART at 115200 baud rate
   Serial.begin(115200);
-  //while (!Serial) delay(10); // wait for serial port to open!
 
   /* Initialise the sensor */
   if (!bno.begin())
@@ -124,64 +127,60 @@ void setup() {
     return;
   } 
 
-  esp_now_register_send_cb(OnDataSent);
-  
+  // Callback function executed when ESP data is sent
+  esp_now_register_send_cb(OnDataSent);   
 
-  // register peer
+  // Pair the receiver ESP and the non-button IMU module
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
-  // register first peer  
+  // Pair RECEIVER 
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add peer");
     return;
   }
-  // register second peer  
+  // Pair IMU NON-BUTTON 
   memcpy(peerInfo.peer_addr, IMUnoButtonAddress, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add peer");
     return;
   }
 
+  // Wait after the connection
   delay(1000);
 }
 
 void loop() {
-  // Set LEDs as RED
+  // Set LEDs as BLUE at the start
   for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
     pixels.setPixelColor(i, pixels.Color(0, 0, 150));
     pixels.show();
   }
 
-  // Wait for button press to start
- while (digitalRead(25) == HIGH) {
-   // Wait
- }
+  // Wait for LEFT button press to start
+  while (digitalRead(25) == HIGH) {}   // Idle
   
-  // Send Request
+  // Send Request to synchronise NON-BUTTON IMU and start joint data collection
   esp_err_t requestResult = esp_now_send(IMUnoButtonAddress, (uint8_t *)&req, sizeof(req));
 
-  // Set LEDs as blue after the press
+  // Clear LEDs after the press
   for(int i=0; i<NUMPIXELS; i++) { 
     pixels.setPixelColor(i, pixels.Color(0, 0, 0));
     pixels.show();
   }
 
-  // Delay
-  delay(4000);  // 4s preparation delay
+  // 4 seconds for preparation for the tenniss serve
+  delay(4000);
 
+  // Set LEDs as GREEN : Data Collection In Progress
   for(int i=0; i<NUMPIXELS; i++) { 
     pixels.setPixelColor(i, pixels.Color(0, 150, 0));
     pixels.show();
   }
 
-    // Set LEDs as blue after the press
-  //for(int i=0; i<NUMPIXELS; i++) { 
-  //  pixels.setPixelColor(i, pixels.Color(0, 150, 0));
-  //  pixels.show();
- // }
-  
-  for(int i=0; i <= Sample; i++){
+
+  // Data collection cycle. Number of iteration depends on the number of data points desired per serve
+  for(int i=0; i <= Sample; i++){   
     sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
     bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
@@ -197,39 +196,35 @@ void loop() {
     printEvent(&accelerometerData);
     printEvent(&gravityData);
 
-    //  int8_t boardTemp = bno.getTemp();
-    // // Serial.println();
-    // // Serial.print(F("temperature: "));
-    // // Serial.println(boardTemp);
-
     // uint8_t system, gyro, accel, mag = 0;
     // bno.getCalibration(&system, &gyro, &accel, &mag);
     // Serial.println();
     // Serial.print(i);
-    //Serial.print("Calibration: Sys=");
+    // Serial.print("Calibration: Sys=");
     // Serial.print(system);
     // Serial.print(" Gyro=");
     // Serial.print(gyro);
     // Serial.print(" Accel=");
-    //Serial.print(accel);
-   // Serial.print(" Mag=");
-   // Serial.println(mag);
+    // Serial.print(accel);
+    // Serial.print(" Mag=");
+    // Serial.println(mag);
+    // Serial.println("--");
 
-   // Serial.println("--");
+    // In-sample delay
     delay(100);    
-  
   }
 
-  // Set LEDs as red/green
+  // Set LEDs as label classification indicators (Red, Off, Green)
   pixels.setPixelColor(0, pixels.Color(150, 0, 0));
   pixels.setPixelColor(1, pixels.Color(0, 0, 0));
   pixels.setPixelColor(2, pixels.Color(0, 150, 0));
   pixels.show();
 
+  // Classify serve label as OUT (RED - LEFT BUTTON) or IN (GREEN - RIGHT BUTTON)
   while(true) {
     if (digitalRead(25) == LOW) {
       label = 0;
-      for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+      for(int i=0; i<NUMPIXELS; i++) {
         pixels.setPixelColor(i, pixels.Color(150, 0, 0));
         pixels.show();
       }
@@ -237,7 +232,7 @@ void loop() {
     }
     if (digitalRead(26) == LOW) {
       label = 1;
-      for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+      for(int i=0; i<NUMPIXELS; i++) {
         pixels.setPixelColor(i, pixels.Color(0, 150, 0));
         pixels.show();
       }
@@ -245,23 +240,29 @@ void loop() {
     }
   }
 
-  esp_err_t serve_result = esp_now_send(0, (uint8_t *) &label, sizeof(label));
+  // Send the classification label to the receiver
+  esp_err_t serve_result = esp_now_send(broadcastAddress, (uint8_t *) &label, sizeof(label));
 
-    delay(500);
+  // Wait 500ms for next step
+  delay(500);
 
-
-  for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
-        pixels.setPixelColor(i, pixels.Color(150, 0, 150));
-        pixels.show();
-      }
-    delay(1000);
+  // Set LEDs as PINK <3 <3 <3
+  for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(150, 0, 150));
+    pixels.show();
+  }
   
-    // Set LEDs as red/green
+  // Wait 1s
+  delay(1000);
+  
+  // Set LEDs as label save options (Red, Off, Green)
   pixels.setPixelColor(0, pixels.Color(150, 0, 0));
   pixels.setPixelColor(1, pixels.Color(0, 0, 0));
   pixels.setPixelColor(2, pixels.Color(0, 150, 0));
   pixels.show();
 
+  // User inputs the decision whether to store (GREEN SWITCH)
+  // or discart (RED) tennis serve data
   while(true) {
     if (digitalRead(25) == LOW) {
       save = 0;
@@ -281,70 +282,62 @@ void loop() {
     }
   }
 
+  // Send the decision regarding the data save
   esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &save, sizeof(save));
 
-    delay(500);
+  // Wait for the end of the cycle
+  delay(500);
+
+  // *** Data Collection Cycle Complere ***
 
 }
 
 
 // ********** FUNCTIONS DEFINITIONS **********
+
 void printEvent(sensors_event_t* event) {
   double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
   if (event->type == SENSOR_TYPE_ACCELEROMETER) {
-    //Serial.print("Accl:");
     Xacc1 = event->acceleration.x;
     Yacc1 = event->acceleration.y;
     Zacc1 = event->acceleration.z;
   }
   else if (event->type == SENSOR_TYPE_ORIENTATION) {
-    //Serial.print("Orient:");
     Xori1 = event->orientation.x;
     Yori1 = event->orientation.y;
     Zori1 = event->orientation.z;
   }
   else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
-    //Serial.print("Mag:");
     Xmag1 = event->magnetic.x;
     Ymag1 = event->magnetic.y;
     Zmag1 = event->magnetic.z;
   }
   else if (event->type == SENSOR_TYPE_GYROSCOPE) {
-    //Serial.print("Gyro:");
     Xgyro1 = event->gyro.x;
     Ygyro1 = event->gyro.y;
     Zgyro1 = event->gyro.z;
   }
   else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
-    //Serial.print("Rot:");
     Xrot1 = event->gyro.x;
     Yrot1 = event->gyro.y;
     Zrot1 = event->gyro.z;
   }
   else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
-    //Serial.print("Linear:");
     Xlin1 = event->acceleration.x;
     Ylin1 = event->acceleration.y;
     Zlin1 = event->acceleration.z;
   }
   else if (event->type == SENSOR_TYPE_GRAVITY) {
-    //Serial.print("Gravity:");
     Xgrav1 = event->acceleration.x;
     Ygrav1 = event->acceleration.y;
     Zgrav1 = event->acceleration.z;
   }
   else {
-    //Serial.print("Unk:");
+
   }
 
-  // Serial.print("\tx= ");
-  // Serial.print(x);
-  // Serial.print(" |\ty= ");
-  // Serial.print(y);
-  // Serial.print(" |\tz= ");
-  // Serial.println(z);
 
-if ((millis() - lastTime) > timerDelay) {
+  if ((millis() - lastTime) > timerDelay) {
    myData.Xacc = Xacc1;
    myData.Yacc= Yacc1; 
    myData.Zacc = Zacc1 ;
@@ -368,16 +361,16 @@ if ((millis() - lastTime) > timerDelay) {
    myData.Zgrav =Zgrav1 ;
    
   
-    //Send message via ESP-NOW
-    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+   //Send message via ESP-NOW
+   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
 
    
-  if (result == ESP_OK) {
+   if (result == ESP_OK) {
     Serial.println("Sent with success");
-  }
-  else {
+   }
+   else {
     Serial.println("Error sending the data");
-  }
- }  
+   }
+  }  
 
 }

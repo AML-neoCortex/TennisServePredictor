@@ -1,3 +1,9 @@
+/*  
+ *  *** NeoCortex 2023 ***
+ *  IMU NO-BUTTONS FIRMWARE
+ *
+ *  This program controls the non-button IMU module
+ */
 #include <Wire.h>
 #include <esp_now.h>
 #include <Adafruit_NeoPixel.h>
@@ -6,17 +12,17 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-// Which pin on the Arduino is connected to the NeoPixels?
-#define PIN        23 // On Trinket or Gemma, suggest changing this to 1
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 3 // Popular NeoPixel ring size
+// Neopixel LED pin
+#define PIN        23
+// How many NeoPixels are attached to the Arduino
+#define NUMPIXELS 3
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 
-
+// Interrupt data received flag
 volatile uint8_t flag_receive = 0;
 
-
+// IMU module features data structure
 int id = 2;
 int Xacc1 = 0;
 int Yacc1 = 0;
@@ -42,13 +48,10 @@ int Zgrav1 = 0;
 int Sample = 500;
 
 
-
-
 /* Set the delay between fresh samples */
 uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
 
 // Check I2C device address and correct line below (by default address is 0x29 or 0x28)
-//                                   id, address
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
 
 uint8_t broadcastAddress[] = {0x4C, 0x75, 0x25, 0x31, 0xA9, 0x47};
@@ -89,19 +92,13 @@ unsigned long timerDelay = 10000;
 esp_now_peer_info_t peerInfo;
 
 
-
-
-
-
-
 void setup() {
   // Setup Neopixel LEDs
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
 
-  // put your setup code here, to run once:
+  // Open USART at 115200 baud rate
   Serial.begin(115200);
-  // while (!Serial) delay(10); // wait for serial port to open!
 
   /* Initialise the sensor */
   if (!bno.begin())
@@ -118,160 +115,142 @@ void setup() {
     return;
   } 
 
+  // Callback function executed when ESP data is sent
   esp_now_register_send_cb(OnDataSent);
+  // Callback function executed when ANY ESP data is received
   esp_now_register_recv_cb(OnDataRecv);
   
-  // register peer
+  // Pair the receiver ESP only
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
-  // register first peer  
+  // Pair RECEIVER  
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add peer");
     return;
   }
 
-  // memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  // peerInfo.channel = 0;  
-  // peerInfo.encrypt = false;
-
-  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
-  //     Serial.println("Failed to add peer");
-  //     return;
-  //   }
-
+  // Wait after the connection
   delay(1000);
 }
 
 void loop() {
   // Set LEDs as BLUE at the start
-    for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
-     pixels.setPixelColor(i, pixels.Color(0, 0, 150));
-      pixels.show();
-    }
+  for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+    pixels.setPixelColor(i, pixels.Color(0, 0, 150));
+    pixels.show();
+  }
 
-    // Wait for data receive flag
-    while(!flag_receive);
+  // Wait for data receive flag (triggered by the button on the second IMU)
+  while(!flag_receive);
 
-    // Set LEDs as NONE
-    for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
-      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
-      pixels.show();
-    }
+  // Clear the receive flag immediately
+  flag_receive = 0;
 
-    // Delay
-    delay(4000);  // 4s preparation delay
+  // Clear LEDs after the press (on the second IMU)
+  for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+    pixels.show();
+  }
 
-    for(int i=0; i<NUMPIXELS; i++) { 
-      pixels.setPixelColor(i, pixels.Color(0, 150, 0));
-      pixels.show();
-    }
+  // 4 seconds for preparation for the tenniss serve
+  delay(4000);
 
-    
-    for(int i=0; i <= Sample; i++){
-      sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
-      bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
-      bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-      bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-      bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
-      bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-      bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+  // Set LEDs as GREEN : Data Collection In Progress
+  for(int i=0; i<NUMPIXELS; i++) { 
+    pixels.setPixelColor(i, pixels.Color(0, 150, 0));
+    pixels.show();
+  }
 
-      printEvent(&orientationData);
-      printEvent(&angVelocityData);
-      printEvent(&linearAccelData);
-      printEvent(&magnetometerData);
-      printEvent(&accelerometerData);
-      printEvent(&gravityData);
 
-      //  int8_t boardTemp = bno.getTemp();
-      // // Serial.println();
-      // // Serial.print(F("temperature: "));
-      // // Serial.println(boardTemp);
+  // Data collection cycle. Number of iteration depends on the number of data points desired per serve
+  for(int i=0; i <= Sample; i++){
+    sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
+    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
+    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+    bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+    bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
 
-      uint8_t system, gyro, accel, mag = 0;
-      bno.getCalibration(&system, &gyro, &accel, &mag);
-      // Serial.println();
-      // Serial.print(i);
-      //Serial.print("Calibration: Sys=");
-      // Serial.print(system);
-      // Serial.print(" Gyro=");
-      // Serial.print(gyro);
-      // Serial.print(" Accel=");
-      //Serial.print(accel);
-      // Serial.print(" Mag=");
-      // Serial.println(mag);
+    printEvent(&orientationData);
+    printEvent(&angVelocityData);
+    printEvent(&linearAccelData);
+    printEvent(&magnetometerData);
+    printEvent(&accelerometerData);
+    printEvent(&gravityData);
 
-      // Serial.println("--");
-      delay(100);    
-    }
+    // uint8_t system, gyro, accel, mag = 0;
+    // bno.getCalibration(&system, &gyro, &accel, &mag);
+    // Serial.println();
+    // Serial.print(i);
+    // Serial.print("Calibration: Sys=");
+    // Serial.print(system);
+    // Serial.print(" Gyro=");
+    // Serial.print(gyro);
+    // Serial.print(" Accel=");
+    // Serial.print(accel);
+    // Serial.print(" Mag=");
+    // Serial.println(mag);
+    // Serial.println("--");
 
-    for(int i=0; i<NUMPIXELS; i++) { 
-      pixels.setPixelColor(i, pixels.Color(0, 0, 150));
-      pixels.show();
-    }
+    // In-sample delay
+    delay(100);  
+  }
 
-    flag_receive = 0;
+  // Set LEDs as BLUE
+  for(int i=0; i<NUMPIXELS; i++) { 
+    pixels.setPixelColor(i, pixels.Color(0, 0, 150));
+    pixels.show();
+  }
+
+  // End of data collection cycle
 
 }
-
 
 
 
 void printEvent(sensors_event_t* event) {
   double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
   if (event->type == SENSOR_TYPE_ACCELEROMETER) {
-    //Serial.print("Accl:");
     Xacc1 = event->acceleration.x;
     Yacc1 = event->acceleration.y;
     Zacc1 = event->acceleration.z;
   }
   else if (event->type == SENSOR_TYPE_ORIENTATION) {
-    //Serial.print("Orient:");
     Xori1 = event->orientation.x;
     Yori1 = event->orientation.y;
     Zori1 = event->orientation.z;
   }
   else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
-    //Serial.print("Mag:");
     Xmag1 = event->magnetic.x;
     Ymag1 = event->magnetic.y;
     Zmag1 = event->magnetic.z;
   }
   else if (event->type == SENSOR_TYPE_GYROSCOPE) {
-    //Serial.print("Gyro:");
     Xgyro1 = event->gyro.x;
     Ygyro1 = event->gyro.y;
     Zgyro1 = event->gyro.z;
   }
   else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
-    //Serial.print("Rot:");
     Xrot1 = event->gyro.x;
     Yrot1 = event->gyro.y;
     Zrot1 = event->gyro.z;
   }
   else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
-    //Serial.print("Linear:");
     Xlin1 = event->acceleration.x;
     Ylin1 = event->acceleration.y;
     Zlin1 = event->acceleration.z;
   }
   else if (event->type == SENSOR_TYPE_GRAVITY) {
-    //Serial.print("Gravity:");
     Xgrav1 = event->acceleration.x;
     Ygrav1 = event->acceleration.y;
     Zgrav1 = event->acceleration.z;
   }
   else {
-    //Serial.print("Unk:");
+
   }
 
-  // Serial.print("\tx= ");
-  // Serial.print(x);
-  // Serial.print(" |\ty= ");
-  // Serial.print(y);
-  // Serial.print(" |\tz= ");
-  // Serial.println(z);
 
   if ((millis() - lastTime) > timerDelay) {
     myData.Xacc = Xacc1;
@@ -308,11 +287,8 @@ void printEvent(sensors_event_t* event) {
     else {
       Serial.println("Error sending the data");
     }
- }  
-
-
+  }  
 }
-
 
 
 // ********** FUNCTIONS DEFINITIONS **********
@@ -326,6 +302,7 @@ void OnDataRecv(const unsigned char * mac_addr, const unsigned char *incomingDat
   char macStr[18];
   Serial.printf("Packet received from IMU Button: %d \n", &incomingData);
 
+  // Trigger flag receive to begin data collection cycle in the loop()
   flag_receive = 1;
   
 }
