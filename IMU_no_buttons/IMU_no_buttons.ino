@@ -45,7 +45,7 @@ int Zlin1 = 0;
 int Xgrav1 = 0;
 int Ygrav1 = 0;
 int Zgrav1 = 0;
-int Sample = 500;
+int Sample = 200;
 
 
 /* Set the delay between fresh samples */
@@ -195,7 +195,7 @@ void loop() {
     // Serial.println("--");
 
     // In-sample delay
-    delay(100);  
+    delay(80);  
   }
 
   // Set LEDs as BLUE

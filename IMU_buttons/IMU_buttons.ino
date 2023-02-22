@@ -20,8 +20,10 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 
 // Additional variables for data transmission purposes
-int label = 999;
-int save = 999;
+char in[] = "in";
+char out[] = "out";
+char save[] = "save";
+char nosave[] = "nosv";
 
 // Request Data Collection Payload
 int req = 123;
@@ -49,7 +51,7 @@ int Zlin1 = 0;
 int Xgrav1 = 0;
 int Ygrav1 = 0;
 int Zgrav1 = 0;
-int Sample = 500;
+int Sample = 200;
 
 
 /* Set the delay between fresh samples */
@@ -211,7 +213,7 @@ void loop() {
     // Serial.println("--");
 
     // In-sample delay
-    delay(100);    
+    delay(80);    
   }
 
   // Set LEDs as label classification indicators (Red, Off, Green)
@@ -223,7 +225,7 @@ void loop() {
   // Classify serve label as OUT (RED - LEFT BUTTON) or IN (GREEN - RIGHT BUTTON)
   while(true) {
     if (digitalRead(25) == LOW) {
-      label = 0;
+      esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &out, sizeof(save));
       for(int i=0; i<NUMPIXELS; i++) {
         pixels.setPixelColor(i, pixels.Color(150, 0, 0));
         pixels.show();
@@ -231,7 +233,7 @@ void loop() {
       break;
     }
     if (digitalRead(26) == LOW) {
-      label = 1;
+      esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &in, sizeof(save));
       for(int i=0; i<NUMPIXELS; i++) {
         pixels.setPixelColor(i, pixels.Color(0, 150, 0));
         pixels.show();
@@ -239,9 +241,6 @@ void loop() {
       break;
     }
   }
-
-  // Send the classification label to the receiver
-  esp_err_t serve_result = esp_now_send(broadcastAddress, (uint8_t *) &label, sizeof(label));
 
   // Wait 500ms for next step
   delay(500);
@@ -265,7 +264,7 @@ void loop() {
   // or discart (RED) tennis serve data
   while(true) {
     if (digitalRead(25) == LOW) {
-      save = 0;
+      esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &nosave, sizeof(save));
       for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
         pixels.setPixelColor(i, pixels.Color(150, 0, 0));
         pixels.show();
@@ -273,7 +272,7 @@ void loop() {
       break;
     }
     if (digitalRead(26) == LOW) {
-      save = 1;
+      esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &save, sizeof(save));
       for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
         pixels.setPixelColor(i, pixels.Color(0, 150, 0));
         pixels.show();
@@ -281,9 +280,7 @@ void loop() {
       break;
     }
   }
-
-  // Send the decision regarding the data save
-  esp_err_t save_result = esp_now_send(broadcastAddress, (uint8_t *) &save, sizeof(save));
+  
 
   // Wait for the end of the cycle
   delay(500);
