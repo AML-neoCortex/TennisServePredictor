@@ -67,5 +67,5 @@ with open(OUTPUT_NAME,"a") as f:
             # print(IMU1)
             # print(IMU2)
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            writer.writerow([dt,"IMU1",IMU1])
-            writer.writerow([dt,"IMU2",IMU2])
+            writer.writerow([dt,"IMU1",IMU1, label])
+            writer.writerow([dt,"IMU2",IMU2, label])
