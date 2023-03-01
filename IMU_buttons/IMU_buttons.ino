@@ -24,6 +24,7 @@ char in[] = "in";
 char out[] = "out";
 char save[] = "save";
 char nosave[] = "nosv";
+char cam[] ="sync";
 
 // Request Data Collection Payload
 int req = 123;
@@ -51,11 +52,11 @@ int Zlin1 = 0;
 int Xgrav1 = 0;
 int Ygrav1 = 0;
 int Zgrav1 = 0;
-int Sample = 200;
+int Sample = 100;
 
 
 /* Set the delay between fresh samples */
-uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
+uint16_t BNO055_SAMPLERATE_DELAY_MS = 80;
 
 // Check I2C device address and correct line below (by default address is 0x29 or 0x28)
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
@@ -164,6 +165,7 @@ void loop() {
   
   // Send Request to synchronise NON-BUTTON IMU and start joint data collection
   esp_err_t requestResult = esp_now_send(IMUnoButtonAddress, (uint8_t *)&req, sizeof(req));
+  esp_err_t CamSyncResult = esp_now_send(broadcastAddress, (uint8_t *) &cam, sizeof(cam));
 
   // Clear LEDs after the press
   for(int i=0; i<NUMPIXELS; i++) { 

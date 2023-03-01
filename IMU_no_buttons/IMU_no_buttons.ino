@@ -45,11 +45,11 @@ int Zlin1 = 0;
 int Xgrav1 = 0;
 int Ygrav1 = 0;
 int Zgrav1 = 0;
-int Sample = 200;
+int Sample = 100;
 
 
 /* Set the delay between fresh samples */
-uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
+uint16_t BNO055_SAMPLERATE_DELAY_MS = 80;
 
 // Check I2C device address and correct line below (by default address is 0x29 or 0x28)
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
