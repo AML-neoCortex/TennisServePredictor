@@ -64,7 +64,7 @@ while True:
     # TO save or not to save? That is the question...
     if decoded_bytes == "save":
         # Append to output file
-        dt = datetime.now().strftime("%d_%m_%Y_%H:%M:%S")
+        dt = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
 
         file = f"{OUTPUT_NAME}_{dt}.csv"
 
