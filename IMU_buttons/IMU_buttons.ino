@@ -165,7 +165,6 @@ void loop() {
   
   // Send Request to synchronise NON-BUTTON IMU and start joint data collection
   esp_err_t requestResult = esp_now_send(IMUnoButtonAddress, (uint8_t *)&req, sizeof(req));
-  esp_err_t CamSyncResult = esp_now_send(broadcastAddress, (uint8_t *) &cam, sizeof(cam));
 
   // Clear LEDs after the press
   for(int i=0; i<NUMPIXELS; i++) { 
@@ -175,6 +174,7 @@ void loop() {
 
   // 4 seconds for preparation for the tenniss serve
   delay(4000);
+  esp_err_t CamSyncResult = esp_now_send(broadcastAddress, (uint8_t *) &cam, sizeof(cam));
 
   // Set LEDs as GREEN : Data Collection In Progress
   for(int i=0; i<NUMPIXELS; i++) { 
