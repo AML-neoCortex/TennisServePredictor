@@ -11,6 +11,8 @@
  */
 #include <ESP8266WiFi.h>
 #include <espnow.h>
+// #include "soc/rtc_wdt.h"
+
 
 char in[] = "in";
 char out[] = "out";
@@ -22,27 +24,27 @@ char cam[]="sync";
 // IMU module features data structure
 typedef struct struct_message {
     int id;
-    int Xacc ;
-    int Yacc ;
-    int Zacc ;
-    int Xori ;
-    int Yori ;
-    int Zori ;
-    int Xmag ;
-    int Ymag ;
-    int Zmag ;
-    int Xgyro ;
-    int Ygyro ;
-    int Zgyro ;
-    int Xrot ;
-    int Yrot ;
-    int Zrot ;
-    int Xlin ;
-    int Ylin ;
-    int Zlin ;
-    int Xgrav ;
-    int Ygrav ;
-    int Zgrav ;
+    int8_t Xacc ;
+    int8_t Yacc ;
+    int8_t Zacc ;
+    int8_t Xori ;
+    int8_t Yori ;
+    int8_t Zori ;
+    int8_t Xmag ;
+    int8_t Ymag ;
+    int8_t Zmag ;
+    int8_t Xgyro ;
+    int8_t Ygyro ;
+    int8_t Zgyro ;
+    int8_t Xrot ;
+    int8_t Yrot ;
+    int8_t Zrot ;
+    int8_t Xlin ;
+    int8_t Ylin ;
+    int8_t Zlin ;
+    int8_t Xgrav ;
+    int8_t Ygrav ;
+    int8_t Zgrav ;
 } struct_message;
 
 // Create a struct_message called myData
@@ -98,7 +100,9 @@ void OnDataRecv(uint8_t * mac_addr, uint8_t *incomingData, uint8_t len) {
  
 
 void setup() {
-
+  ESP.wdtDisable();
+  // rtc_wdt_protect_off();
+  // rtc_wdt_disable();
   // Open USART at 115200 baud rate
   Serial.begin(115200);
   

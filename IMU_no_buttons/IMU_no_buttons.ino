@@ -11,6 +11,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include "soc/rtc_wdt.h"
+
 
 // Neopixel LED pin
 #define PIN        23
@@ -24,28 +26,28 @@ volatile uint8_t flag_receive = 0;
 
 // IMU module features data structure
 int id = 2;
-int Xacc1 = 0;
-int Yacc1 = 0;
-int Zacc1 = 0;
-int Xori1 = 0;
-int Yori1 = 0;
-int Zori1 = 0;
-int Xmag1 = 0;
-int Ymag1 = 0;
-int Zmag1 = 0 ;
-int Xgyro1 = 0;
-int Ygyro1 = 0;
-int Zgyro1 = 0;
-int Xrot1 = 0;
-int Yrot1 = 0 ;
-int Zrot1 = 0;
-int Xlin1 = 0;
-int Ylin1 = 0;
-int Zlin1 = 0;
-int Xgrav1 = 0;
-int Ygrav1 = 0;
-int Zgrav1 = 0;
-int Sample = 100;
+int8_t Xacc1 = 0;
+int8_t Yacc1 = 0;
+int8_t Zacc1 = 0;
+int8_t Xori1 = 0;
+int8_t Yori1 = 0;
+int8_t Zori1 = 0;
+int8_t Xmag1 = 0;
+int8_t Ymag1 = 0;
+int8_t Zmag1 = 0 ;
+int8_t Xgyro1 = 0;
+int8_t Ygyro1 = 0;
+int8_t Zgyro1 = 0;
+int8_t Xrot1 = 0;
+int8_t Yrot1 = 0 ;
+int8_t Zrot1 = 0;
+int8_t Xlin1 = 0;
+int8_t Ylin1 = 0;
+int8_t Zlin1 = 0;
+int8_t Xgrav1 = 0;
+int8_t Ygrav1 = 0;
+int8_t Zgrav1 = 0;
+int Sample = 500;
 
 
 /* Set the delay between fresh samples */
@@ -62,28 +64,29 @@ uint8_t IMUwithButtonAddress[] = {0x24, 0x4C, 0xAB, 0x82, 0xF6, 0x40};
 
 typedef struct struct_message {
     int id;
-    int Xacc ;
-    int Yacc ;
-    int Zacc ;
-    int Xori ;
-    int Yori ;
-    int Zori ;
-    int Xmag ;
-    int Ymag ;
-    int Zmag ;
-    int Xgyro ;
-    int Ygyro ;
-    int Zgyro ;
-    int Xrot ;
-    int Yrot ;
-    int Zrot ;
-    int Xlin ;
-    int Ylin ;
-    int Zlin ;
-    int Xgrav ;
-    int Ygrav ;
-    int Zgrav ;
+    int8_t Xacc ;
+    int8_t Yacc ;
+    int8_t Zacc ;
+    int8_t Xori ;
+    int8_t Yori ;
+    int8_t Zori ;
+    int8_t Xmag ;
+    int8_t Ymag ;
+    int8_t Zmag ;
+    int8_t Xgyro ;
+    int8_t Ygyro ;
+    int8_t Zgyro ;
+    int8_t Xrot ;
+    int8_t Yrot ;
+    int8_t Zrot ;
+    int8_t Xlin ;
+    int8_t Ylin ;
+    int8_t Zlin ;
+    int8_t Xgrav ;
+    int8_t Ygrav ;
+    int8_t Zgrav ;
 } struct_message;
+
 
 struct_message myData;
 unsigned long lastTime = 0;
@@ -93,6 +96,8 @@ esp_now_peer_info_t peerInfo;
 
 
 void setup() {
+  rtc_wdt_protect_off();
+  rtc_wdt_disable();
   // Setup Neopixel LEDs
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
@@ -195,7 +200,7 @@ void loop() {
     // Serial.println("--");
 
     // In-sample delay
-    delay(80);  
+    delay(10);  
   }
 
   // Set LEDs as BLUE
