@@ -27,7 +27,7 @@ b'save\r\n']
 
 OUTPUT_NAME = "data/SERVE"
 
-ser = serial.Serial("/dev/cu.usbserial-1420", 115200)
+ser = serial.Serial("COM4", 115200)
 ser.flushInput()
 
 IMU1 = []
@@ -40,7 +40,7 @@ while True:
 # for ser_bytes in test_input:
     ser_bytes = ser.readline()
     # skip new line chars
-    decoded_bytes = str(ser_bytes[0:len(ser_bytes)-2].decode("utf-8"))
+    decoded_bytes = str(ser_bytes[0:len(ser_bytes)-2].decode("unicode_escape"))
     print(decoded_bytes)
     # Get MAC address
     if decoded_bytes == "24:4c:ab:82:fc:2c":
