@@ -47,7 +47,7 @@ int8_t Zlin1 = 0;
 int8_t Xgrav1 = 0;
 int8_t Ygrav1 = 0;
 int8_t Zgrav1 = 0;
-int Sample = 500;
+int Sample = 150;
 
 
 /* Set the delay between fresh samples */
