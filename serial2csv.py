@@ -4,15 +4,14 @@ import csv
 from collections import deque
 from imutils.video import VideoStream
 import numpy as np
-import argparse
+
 import cv2
 import imutils
 import time
-import threading
-import socket
+
 import csv
 import serial
-
+import os 
 
 test_input = [b'24:4c:ab:82:f6:40\r\n',
 b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
@@ -48,28 +47,23 @@ IMU2 = []
 IMU = 0
 label = 0
 
-trackLower = (24, 49, 90)
-trackUpper = (90,160,255)
+# trackLower = (24, 49, 90)
+# trackUpper = (90,160,255)
+trackLower = (31, 111, 149)
+trackUpper = (51, 255, 255)
 
-buffer = 300 # amount of frames to capture
+buffer = 150 # amount of frames to capture
 frame_skip = 1
 index = 0
 # webcam data 
-filename = "data.csv"
+filename = ""
+webcamFileName = ""
 
 
-# Write column headers based on number of coordinates
-header_row = ["Index"]
-for i in range(buffer):
-    header_row.append(f"X Coordinate {i}")
-    header_row.append(f"Y Coordinate {i}")
-file = open(filename, mode='w', newline='')
-writer = csv.writer(file)
-writer.writerow(header_row)
-file.close()
+
 
 # pts = deque(maxlen=buffer)
-vs = VideoStream(src=1).start()
+vs = VideoStream(src=0).start()
 # vs = cv2.VideoCapture(0, cv2.CAP_MSMF)VideoStream(src=0,cv2.CAP_MSMF).start()
 # vs = cv2.VideoCapture(0, cv2.CAP_MSMF)
 # connection to serial, TO CHANGE based on user machine
@@ -87,8 +81,25 @@ while True:
 
 
     if decoded_bytes == 'sync':
-        file = open(filename, mode='a', newline='')
-        writer = csv.writer(file)
+
+        filename = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
+
+
+        webcamFileName = f"{OUTPUT_NAME}_{filename}_webcam.csv"
+
+        # Write column headers based on number of coordinates
+        # header_row = ["Index"]
+        # for i in range(buffer):
+        #     header_row.append(f"X Coordinate {i}")
+        #     header_row.append(f"Y Coordinate {i}")
+        fileWebcam = open(webcamFileName, mode='w', newline='')
+        writerWebcam = csv.writer(fileWebcam)
+        # writerWebcam.writerow(header_row)
+        # file.close()
+
+
+        # file = open(filename, mode='a', newline='')
+        # writer = csv.writer(file)
         rawBallPos = []
         absDifBallPos = []
         frameCount = 1
@@ -143,11 +154,11 @@ while True:
             # pts.appendleft(center)
             rawBallPos.append(center)
 
-            # cv2.imshow("Frame", frame)
-            # key = cv2.waitKey(1) & 0xFF
-            # # if the 'q' key is pressed, stop the loop
-            # if key == ord("q"):
-            #     break
+            cv2.imshow("Frame", frame)
+            key = cv2.waitKey(1) & 0xFF
+            # if the 'q' key is pressed, stop the loop
+            if key == ord("q"):
+                break
 
         # calc diff in abs movement from first frame 
         initPos = rawBallPos[0]
@@ -170,13 +181,20 @@ while True:
 
 
         # Write coordinate data as a single row
-        row = [index]
-        for coord in absDifBallPos:
-            row += list(coord)
-        writer.writerow(row)
+        # row = [index]
+        # for coord in absDifBallPos:
+        #     row += list(coord)
+        # writerWebcam.writerow(row)
+
+        for i in range(buffer-1):
+            row = [i, absDifBallPos[i][0],absDifBallPos[i][1]]
+            writerWebcam.writerow(row)
+
         
-        index += 1
-        file.close()
+        # index += 1
+        fileWebcam.close()
+
+        time.sleep(0.01)
     # Get MAC address
     if decoded_bytes == "24:4c:ab:82:fc:2c":
         IMU = 2
@@ -199,9 +217,9 @@ while True:
     # TO save or not to save? That is the question...
     if decoded_bytes == "save":
         # Append to output file
-        dt = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
+        # dt = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
 
-        file = f"{OUTPUT_NAME}_{dt}.csv"
+        file = f"{OUTPUT_NAME}_{filename}.csv"
 
         with open(file,'w') as f:
             writer = csv.writer(f,delimiter=',')
@@ -229,6 +247,7 @@ while True:
         # Clear buffer lists
         IMU1 = []
         IMU2 = []
+        os.remove(webcamFileName)
     
 
 vs.stop()
