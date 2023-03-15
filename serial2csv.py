@@ -27,7 +27,7 @@ b'save\r\n']
 
 OUTPUT_NAME = "data/SERVE"
 
-ser = serial.Serial("COM4", 115200)
+ser = serial.Serial("COM7", 115200)
 ser.flushInput()
 
 IMU1 = []
