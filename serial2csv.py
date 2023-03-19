@@ -223,7 +223,7 @@ while True:
 
         with open(file,'w') as f:
             writer = csv.writer(f,delimiter=',')
-            writer.writerow(["IMU","index","x_pos","y_pos","z_pos","..."])
+            writer.writerow(['IMU','index','Xacc', 'Yacc', 'Zacc', 'Xori', 'Yori', 'Zori', 'Xmag', 'Ymag' , 'Zmag', 'Xgyro', 'Ygyro', 'Zgyro', 'Xrot','Yrot', 'Zrot' , 'Xlin' ,'Ylin', 'Zlin', 'Xgrav', 'Ygrav', 'Zgrav'])
             # Write label on first row
             writer.writerow([label])
             # Append IMU1
@@ -243,6 +243,7 @@ while True:
         # Clear buffer lists
         IMU1 = []
         IMU2 = []
+        
     elif decoded_bytes == "nosave":
         # Clear buffer lists
         IMU1 = []
