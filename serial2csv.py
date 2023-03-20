@@ -49,8 +49,8 @@ label = 0
 
 # trackLower = (24, 49, 90)
 # trackUpper = (90,160,255)
-trackLower = (31, 111, 149)
-trackUpper = (51, 255, 255)
+trackLower = (0, 217, 121)
+trackUpper = (50, 255, 255)
 
 buffer = 150 # amount of frames to capture
 frame_skip = 1
@@ -67,7 +67,7 @@ vs = VideoStream(src=0).start()
 # vs = cv2.VideoCapture(0, cv2.CAP_MSMF)VideoStream(src=0,cv2.CAP_MSMF).start()
 # vs = cv2.VideoCapture(0, cv2.CAP_MSMF)
 # connection to serial, TO CHANGE based on user machine
-# ser = serial.Serial("COM3", 115200)
+# ser = serial.Serial("dev/cu.usbserial-1430", 115200)
 # ser.flushInput()
 
 # allow the camera or video file to warm up
