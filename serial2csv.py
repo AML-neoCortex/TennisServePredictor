@@ -11,30 +11,41 @@ import time
 
 import csv
 import serial
-import os 
+import os
+import pickle
+from tkinter import *
+import pandas as pd
 
-test_input = [b'24:4c:ab:82:f6:40\r\n',
-b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-b'24:4c:ab:82:f6:40\r\n',
-b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-b'24:4c:ab:82:f6:40\r\n',
-b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:fc:2c\r\n',
-b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-b'24:4c:ab:82:f6:40\r\n',
-b'in\r\n',
-b'24:4c:ab:82:f6:40\r\n',
-b'save\r\n']
+def set_color(serve):
+   if serve:
+       root.configure(background = ['green'])
+   else:
+       root.configure(background = ['red'])
+
+INFERENCE = False
+
+# test_input = [b'24:4c:ab:82:f6:40\r\n',
+# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
+# b'24:4c:ab:82:f6:40\r\n',
+# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
+# b'24:4c:ab:82:f6:40\r\n',
+# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:fc:2c\r\n',
+# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
+# b'24:4c:ab:82:f6:40\r\n',
+# b'in\r\n',
+# b'24:4c:ab:82:f6:40\r\n',
+# b'save\r\n']
 
 OUTPUT_NAME = "data/SERVE"
 
@@ -60,8 +71,6 @@ filename = ""
 webcamFileName = ""
 
 
-
-
 # pts = deque(maxlen=buffer)
 vs = VideoStream(src=0).start()
 # vs = cv2.VideoCapture(0, cv2.CAP_MSMF)VideoStream(src=0,cv2.CAP_MSMF).start()
@@ -84,28 +93,18 @@ while True:
 
         filename = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
 
-
         webcamFileName = f"{OUTPUT_NAME}_{filename}_webcam.csv"
 
         # Write column headers based on number of coordinates
-        # header_row = ["Index"]
-        # for i in range(buffer):
-        #     header_row.append(f"X Coordinate {i}")
-        #     header_row.append(f"Y Coordinate {i}")
         fileWebcam = open(webcamFileName, mode='w', newline='')
         writerWebcam = csv.writer(fileWebcam)
-        # writerWebcam.writerow(header_row)
-        # file.close()
 
-
-        # file = open(filename, mode='a', newline='')
-        # writer = csv.writer(file)
         rawBallPos = []
         absDifBallPos = []
         frameCount = 1
+
         # maybe only take one frame out of x 
         for x in range(buffer):
-
             # skip x frames
             if  not (frameCount % frame_skip == 0):
                 continue
@@ -170,31 +169,14 @@ while True:
         # print(rawBallPos)	
         print(absDifBallPos)
 
-        # # maybe normalize?
-        # data_transposed = list(zip(*absDifBallPos))
-        # print(data_transposed)
-        # # add index
-        # data_transposed.insert(0,index)
-        # # Write coordinate data as rows
-        # for data in data_transposed:
-        # 	writer.writerow(data)
-
-
-        # Write coordinate data as a single row
-        # row = [index]
-        # for coord in absDifBallPos:
-        #     row += list(coord)
-        # writerWebcam.writerow(row)
-
         for i in range(buffer-1):
             row = [i, absDifBallPos[i][0],absDifBallPos[i][1]]
             writerWebcam.writerow(row)
 
-        
-        # index += 1
         fileWebcam.close()
 
         time.sleep(0.01)
+
     # Get MAC address
     if decoded_bytes == "24:4c:ab:82:fc:2c":
         IMU = 2
@@ -217,7 +199,6 @@ while True:
     # TO save or not to save? That is the question...
     if decoded_bytes == "save":
         # Append to output file
-        # dt = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
 
         file = f"{OUTPUT_NAME}_{filename}.csv"
 
@@ -243,13 +224,49 @@ while True:
         # Clear buffer lists
         IMU1 = []
         IMU2 = []
+
+        if INFERENCE:
+            labels = ['IMU','index','Xacc', 'Yacc', 'Zacc', 'Xori', 'Yori', 'Zori', 'Xmag', 'Ymag' , 'Zmag', 'Xgyro', 'Ygyro', 'Zgyro', 'Xrot','Yrot', 'Zrot' , 'Xlin' ,'Ylin', 'Zlin', 'Xgrav', 'Ygrav', 'Zgrav']
+            df_imu = pd.read_csv(file,skiprows=4,header=None,names=labels)
+            df_cam = pd.read_csv(webcamFileName,names=['index','x','y'])
+
+            df = pd.merge(df_imu, df_cam, on='index')
+
+            df_imu1 = df.loc[df['IMU'] == 1]
+            df_imu1.columns = ['IMU','index','X1acc', 'Y1acc', 'Z1acc', 'X1ori', 'Y1ori', 'Z1ori', 'X1mag', 'Y1mag' , 'Z1mag', 'X1gyro', 'Y1gyro', 'Z1gyro', 'X1rot','Y1rot', 'Z1rot' , 'X1lin' ,'Y1lin', 'Z1lin', 'X1grav', 'Y1grav', 'Z1grav', 'Xcam', 'Ycam']
+            df_imu2 = df.loc[df['IMU'] == 2]
+            df_imu2.columns = ['IMU','index','X2acc', 'Y2acc', 'Z2acc', 'X2ori', 'Y2ori', 'Z2ori', 'X2mag', 'Y2mag' , 'Z2mag', 'X2gyro', 'Y2gyro', 'Z2gyro', 'X2rot','Y2rot', 'Z2rot' , 'X2lin' ,'Y2lin', 'Z2lin', 'X2grav', 'Y2grav', 'Z2grav', 'Xcam', 'Ycam']
+
+            merged_df = pd.merge(df_imu1, df_imu2, on='index')
+            merged_df.drop(columns=['index', 'IMU_x'], inplace=True)
+
+            serve_data = np.array(merged_df.to_numpy())
+
+            print(f'Data Loaded. {serve_data.shape}')
+
+            model_file = '/models/rf.sav'
+            model = pickle.load(open(model_file, 'rb'))
+
+            print('Pre-trained model weights loaded.')
+
+            root = Tk()
+            root.title("Serve In or Out")
+            root.resizable(False, False)
+            root.attributes("-fullscreen", True)
+
+            serve = model.predict(np.array([serve_data]).reshape(1, -1))[0]
+            print(f'Serve outcome predicted: {serve}')
+
+            set_color(serve)
+
+            root.mainloop()
+            
         
     elif decoded_bytes == "nosave":
         # Clear buffer lists
         IMU1 = []
         IMU2 = []
         os.remove(webcamFileName)
-    
 
 vs.stop()
 cv2.destroyAllWindows()
