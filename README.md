@@ -1,4 +1,13 @@
 # Tennis Serve Predictor
+
+| Team neoCortex |
+| --- | 
+| Sacha Hakim |
+| Noan Le Renard |
+| Hazem Masoud |
+| Michal Makowka |
+| Antonios Papaoikonomou |
+
 ---
 ## Prerequisites:
 
@@ -11,7 +20,6 @@ https://learn.sparkfun.com/tutorials/how-to-install-ch340-drivers/all
 If you don't follow the above, the board will not be recognised by Windows Device Manager.
 
 ---
-
 ## Arduino Packages
 A number of boards and libraries is required for firmware development.
 
