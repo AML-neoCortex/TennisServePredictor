@@ -46,3 +46,25 @@ Now, regardless of the additional URLs set, search and install the following lib
 1. **Adafruit BNO055 by Adafruit** library. When prompted, install **Adafruit Unified Sensors System** as well! This will happen automatically.
 2. **Adafruit NeoPixel by Adafruit** library. This one is needed to control three WS2812B LEDs fitted on the IMU module.
 
+## Python Packages
+```bash
+pip install imutils opencv-python numpy tkinter pandas
+```
+## Finding HSV boundaries 
+
+```bash
+python rangedetector.py --filter HSV --webcam
+
+```
+Use the provided sliders to threshold the object you want to track. Once satisfied with the result, save the pair of HSV values and change the `trackLower` and `trackUpper` variable in `serial2csv.py` to them.
+
+
+## Data Collection:
+
+Run the following with the appropriate hardware connected:
+```bash
+python serial2csv.py
+
+```
+
+The collected data will appear in the `/data` directory. 

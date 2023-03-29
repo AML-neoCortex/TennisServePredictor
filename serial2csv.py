@@ -1,7 +1,6 @@
 import serial
 from datetime import datetime
 import csv
-from collections import deque
 from imutils.video import VideoStream
 import numpy as np
 
