@@ -24,29 +24,6 @@ def set_color(serve):
 
 INFERENCE = False
 
-# test_input = [b'24:4c:ab:82:f6:40\r\n',
-# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-# b'24:4c:ab:82:f6:40\r\n',
-# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-# b'24:4c:ab:82:f6:40\r\n',
-# b'6,0,7,218,40,7,-21,-3,-35,0,0,0,0,0,0,0,0,0,6,0,7\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,-1,33,-42,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:fc:2c\r\n',
-# b'0,-2,9,358,-2,13,1,31,-43,0,0,0,0,0,0,0,0,0,0,-2,9\r\n',
-# b'24:4c:ab:82:f6:40\r\n',
-# b'in\r\n',
-# b'24:4c:ab:82:f6:40\r\n',
-# b'save\r\n']
-
 OUTPUT_NAME = "data/SERVE"
 
 ser = serial.Serial("COM4", 115200)
@@ -57,32 +34,27 @@ IMU2 = []
 
 IMU = 0
 label = 0
+index = 0
 
-# trackLower = (24, 49, 90)
-# trackUpper = (90,160,255)
+# change these boundaries based on what you are tracking
+# use the rangedetector.py to find them
 trackLower = (0, 217, 121)
 trackUpper = (50, 255, 255)
 
-buffer = 150 # amount of frames to capture
+# amount of frames to capture
+buffer = 150 
 frame_skip = 1
-index = 0
-# webcam data 
+
+# webcam file data 
 filename = ""
 webcamFileName = ""
 
-
-# pts = deque(maxlen=buffer)
+# start webcam feed, modify src if multiple are connected
 vs = VideoStream(src=0).start()
-# vs = cv2.VideoCapture(0, cv2.CAP_MSMF)VideoStream(src=0,cv2.CAP_MSMF).start()
-# vs = cv2.VideoCapture(0, cv2.CAP_MSMF)
-# connection to serial, TO CHANGE based on user machine
-# ser = serial.Serial("dev/cu.usbserial-1430", 115200)
-# ser.flushInput()
-
-# allow the camera or video file to warm up
+# allow the webcamera to warm up
 time.sleep(2.0)
+
 while True:
-# for ser_bytes in test_input:
     ser_bytes = ser.readline()
     # skip new line chars
     decoded_bytes = str(ser_bytes[0:len(ser_bytes)-2].decode("unicode_escape"))
@@ -91,11 +63,10 @@ while True:
 
     if decoded_bytes == 'sync':
 
+        # use same timestamp for both
         filename = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
-
         webcamFileName = f"{OUTPUT_NAME}_{filename}_webcam.csv"
 
-        # Write column headers based on number of coordinates
         fileWebcam = open(webcamFileName, mode='w', newline='')
         writerWebcam = csv.writer(fileWebcam)
 
@@ -103,35 +74,38 @@ while True:
         absDifBallPos = []
         frameCount = 1
 
-        # maybe only take one frame out of x 
         for x in range(buffer):
-            # skip x frames
+
+            # skip frames (optional)
             if  not (frameCount % frame_skip == 0):
                 continue
+
             # grab the current frame
             frame = vs.read()
         
 
-            # resize the frame, blur it, and convert it to the HSV
-            # color space
+            # preprocess frame:
+            # resize the frame, blur it, and convert it to the HSV  color space
             frame = imutils.resize(frame, width=600)
             blurred = cv2.GaussianBlur(frame, (11, 11), 0)
             hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-            # construct a mask for the color "green", then perform
-            # a series of dilations and erosions to remove any small
-            # blobs left in the mask
+
+            # construct a mask from HSV threshold values, then erode and dilate to remove artifacts
             mask = cv2.inRange(hsv, trackLower, trackUpper)
             mask = cv2.erode(mask, None, iterations=2)
             mask = cv2.dilate(mask, None, iterations=2)
 
-                # find contours in the mask and initialize the current
-            # (x, y) center of the ball
+            # find contours in the mask and initialize the current (x, y) center of the ball
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
             cnts = imutils.grab_contours(cnts)
+            
+            # hard code answer if nothing is detected to stop program crashes
             center = (0,0)
+
             # only proceed if at least one contour was found
             if len(cnts) > 0:
+
                 # find the largest contour in the mask, then use
                 # it to compute the minimum enclosing circle and
                 # centroid
@@ -139,20 +113,20 @@ while True:
                 ((x, y), radius) = cv2.minEnclosingCircle(c)
                 M = cv2.moments(c)
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])) 
+
                 print(center)
-                # if center is None:
-                # 	center = (0,0)
-                # only proceed if the radius meets a minimum size
+
+                # only proceed if the radius meets a minimum size to remove artifacts 
                 if radius > 10:
                     # draw the circle and centroid on the frame,
                     # then update the list of tracked points
                     cv2.circle(frame, (int(x), int(y)), int(radius),
                         (0, 255, 255), 2)
                     cv2.circle(frame, center, 5, (0, 0, 255), -1)
-            # update the points queue
-            # pts.appendleft(center)
+
             rawBallPos.append(center)
 
+            # display tracking
             cv2.imshow("Frame", frame)
             key = cv2.waitKey(1) & 0xFF
             # if the 'q' key is pressed, stop the loop
@@ -166,15 +140,16 @@ while True:
         for pos in rawBallPos[1:]:
             absDifBallPos.append(tuple(x-y for x,y in zip(initPos,pos)))
 
-        # print(rawBallPos)	
         print(absDifBallPos)
 
+        # write data to csv 
         for i in range(buffer-1):
             row = [i, absDifBallPos[i][0],absDifBallPos[i][1]]
             writerWebcam.writerow(row)
 
         fileWebcam.close()
 
+        # sync data collection with IMU
         time.sleep(0.01)
 
     # Get MAC address
@@ -266,7 +241,6 @@ while True:
         # Clear buffer lists
         IMU1 = []
         IMU2 = []
-        os.remove(webcamFileName)
 
-vs.stop()
-cv2.destroyAllWindows()
+        # delete webcam data using last save file name
+        os.remove(webcamFileName)
